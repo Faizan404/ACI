@@ -15,6 +15,12 @@
         <header>
             <h1>CineSearch</h1>
             <p>Discover your next favorite movie</p>
+
+            <nav class="nav-tabs">
+                <button id="tab-search" class="tab-btn active">Search</button>
+                <button id="tab-watchlist" class="tab-btn">My Watchlist</button>
+            </nav>
+
             <form id="search-form">
                 <input type="text" id="search-input" placeholder="Search for a movie..." autocomplete="off">
                 <button type="submit" id="search-button">Search</button>
@@ -22,19 +28,32 @@
         </header>
 
         <main>
-            <div id="loading" class="hidden">
-                <div class="spinner"></div>
-                <p>Searching for movies...</p>
-            </div>
-
-            <div id="error-message" class="hidden"></div>
-
-            <div id="movie-results" class="movie-grid">
-                <!-- Movie cards will be injected here -->
-                <div class="empty-state">
-                    <p>Start by searching for a movie title!</p>
+            <!-- Search Results Section -->
+            <section id="search-section">
+                <div id="loading" class="hidden">
+                    <div class="spinner"></div>
+                    <p>Searching for movies...</p>
                 </div>
-            </div>
+
+                <div id="error-message" class="hidden"></div>
+
+                <div id="movie-results" class="movie-grid">
+                    <!-- Movie cards will be injected here -->
+                    <div class="empty-state">
+                        <p>Start by searching for a movie title!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Watchlist Section -->
+            <section id="watchlist-section" class="hidden">
+                <div id="watchlist-results" class="movie-grid">
+                    <!-- Watchlist items will be injected here -->
+                </div>
+                <div id="watchlist-empty" class="empty-state">
+                    <p>Your watchlist is empty. Add some movies from the search results!</p>
+                </div>
+            </section>
         </main>
 
         <footer>

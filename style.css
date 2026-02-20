@@ -42,7 +42,36 @@ header h1 {
 
 header p {
     color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+
+.nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
     margin-bottom: 2rem;
+}
+
+.tab-btn {
+    background: transparent;
+    border: 2px solid var(--card-bg);
+    color: var(--text-secondary);
+    padding: 0.6rem 1.2rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.tab-btn.active {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: var(--bg-color);
 }
 
 #search-form {
@@ -140,6 +169,67 @@ header p {
 .movie-actors {
     font-size: 0.9rem;
     color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.add-watchlist-btn {
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--accent-color);
+    background: transparent;
+    color: var(--accent-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-watchlist-btn:hover {
+    background: var(--accent-color);
+    color: var(--bg-color);
+}
+
+.watchlist-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: 1rem;
+    border-top: 1px solid #334155;
+    padding-top: 1rem;
+}
+
+.rating-input, .comment-input {
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: var(--text-primary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-family: inherit;
+}
+
+.comment-input {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.watchlist-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.remove-btn {
+    background: transparent;
+    border: none;
+    color: var(--error-color);
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-decoration: underline;
+}
+
+.save-status {
+    font-size: 0.8rem;
+    color: #10b981;
 }
 
 /* Utils */
