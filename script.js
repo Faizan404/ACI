@@ -1,344 +1,180 @@
-/**
- * CineSearch - Professional Movie Search App
- *
- * This application demonstrates:
- * 1. DOM Manipulation (Selecting elements, creating elements, modifying content)
- * 2. Promises & Fetch API (Asynchronous programming)
- * 3. Event Listeners
- * 4. Error Handling
- */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreDisplay = document.getElementById('score-display');
+const message = document.getElementById('message');
+const subMessage = document.getElementById('sub-message');
 
-// --- DOM Elements Selection ---
-const searchForm = document.getElementById('search-form');
-const searchInput = document.getElementById('search-input');
-const movieResults = document.getElementById('movie-results');
-const loadingIndicator = document.getElementById('loading');
-const errorMessage = document.getElementById('error-message');
+// Game constants
+const CANVAS_WIDTH = 320;
+const CANVAS_HEIGHT = 480;
+const GRAVITY = 0.25;
+const JUMP = -4.5;
+const PIPE_SPEED = 2;
+const PIPE_GAP = 120;
+const PIPE_WIDTH = 50;
+const BIRD_WIDTH = 34;
+const BIRD_HEIGHT = 24;
 
-// --- Watchlist DOM Elements ---
-const tabSearch = document.getElementById('tab-search');
-const tabWatchlist = document.getElementById('tab-watchlist');
-const searchSection = document.getElementById('search-section');
-const watchlistSection = document.getElementById('watchlist-section');
-const watchlistResults = document.getElementById('watchlist-results');
-const watchlistEmpty = document.getElementById('watchlist-empty');
+canvas.width = CANVAS_WIDTH;
+canvas.height = CANVAS_HEIGHT;
 
-// API URL (Unofficial IMDb Wrapper)
-const API_BASE_URL = 'https://imdb.iamidiotareyoutoo.com/search?q=';
+// Game state
+let gameState = 'START'; // START, PLAYING, GAME_OVER
+let score = 0;
+let frames = 0;
 
-/**
- * Helper to escape HTML and prevent XSS
- */
-function escapeHTML(str) {
-    if (typeof str !== 'string') return str;
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
+// Bird object
+const bird = {
+    x: 50,
+    y: CANVAS_HEIGHT / 2,
+    velocity: 0,
+    width: BIRD_WIDTH,
+    height: BIRD_HEIGHT,
 
-/**
- * Function to fetch movies from the API
- * Returns a Promise that resolves to the movie data
- */
-function fetchMovies(query) {
-    // Show loading spinner
-    showLoading(true);
-    clearResults();
-    hideError();
+    draw() {
+        ctx.fillStyle = '#f7d308';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        // Add a small eye
+        ctx.fillStyle = '#000';
+        ctx.fillRect(this.x + 24, this.y + 5, 4, 4);
+    },
 
-    // Use the Fetch API (which returns a Promise)
-    return fetch(`${API_BASE_URL}${encodeURIComponent(query)}`)
-        .then(response => {
-            // Check if the response is successful
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            // Log data for educational purposes
-            console.log('API Data received:', data);
+    update() {
+        if (gameState === 'PLAYING') {
+            this.velocity += GRAVITY;
+            this.y += this.velocity;
+        }
 
-            if (data.ok && data.description && data.description.length > 0) {
-                displayMovies(data.description);
-            } else {
-                showError('No movies found matching your search.');
-            }
-        })
-        .catch(error => {
-            console.error('Fetch error:', error);
-            showError('Oops! Something went wrong while fetching movies.');
-        })
-        .finally(() => {
-            // Hide loading spinner regardless of success or failure
-            showLoading(false);
-        });
-}
+        // Ceiling collision
+        if (this.y < 0) {
+            this.y = 0;
+            this.velocity = 0;
+        }
 
-/**
- * Function to display movie cards in the DOM
- */
-function displayMovies(movies) {
-    // Clear previous results
-    movieResults.innerHTML = '';
+        // Ground collision
+        if (this.y + this.height > CANVAS_HEIGHT) {
+            this.y = CANVAS_HEIGHT - this.height;
+            if (gameState === 'PLAYING') gameOver();
+        }
+    },
 
-    movies.forEach(movie => {
-        // Create the card element
-        const movieCard = document.createElement('div');
-        movieCard.classList.add('movie-card');
+    flap() {
+        this.velocity = JUMP;
+    },
 
-        // Extract movie details (handling potentially missing data)
-        const title = movie['#TITLE'] || 'Unknown Title';
-        const year = movie['#YEAR'] || 'N/A';
-        const actors = movie['#ACTORS'] || 'Cast information unavailable';
-        const posterUrl = movie['#IMG_POSTER'] || 'https://via.placeholder.com/350x500?text=No+Poster';
+    reset() {
+        this.y = CANVAS_HEIGHT / 2;
+        this.velocity = 0;
+    }
+};
 
-        // Set the inner HTML of the card (escaping variables for safety)
-        movieCard.innerHTML = `
-            <img src="${escapeHTML(posterUrl)}" alt="${escapeHTML(title)}" class="movie-poster" onerror="this.src='https://via.placeholder.com/350x500?text=No+Poster'">
-            <div class="movie-info">
-                <div>
-                    <h3 class="movie-title">${escapeHTML(title)}</h3>
-                    <span class="movie-year">${escapeHTML(year)}</span>
-                </div>
-                <p class="movie-actors"><strong>Cast:</strong> ${escapeHTML(actors)}</p>
-                <button class="add-watchlist-btn">Add to Watchlist</button>
-            </div>
-        `;
+// Pipes array
+let pipes = [];
 
-        // Add event listener to the button
-        const addBtn = movieCard.querySelector('.add-watchlist-btn');
-        addBtn.addEventListener('click', () => {
-            addToWatchlist(movie);
-            addBtn.textContent = 'Added ✓';
-            addBtn.style.borderColor = '#10b981';
-            addBtn.style.color = '#10b981';
-            addBtn.disabled = true;
-        });
+function createPipe() {
+    const minPipeHeight = 50;
+    const maxPipeHeight = CANVAS_HEIGHT - PIPE_GAP - minPipeHeight;
+    const topHeight = Math.floor(Math.random() * (maxPipeHeight - minPipeHeight + 1)) + minPipeHeight;
 
-        // Append the card to the grid
-        movieResults.appendChild(movieCard);
+    pipes.push({
+        x: CANVAS_WIDTH,
+        topHeight: topHeight,
+        passed: false
     });
 }
 
-/**
- * UI Helper Functions
- */
+function updatePipes() {
+    if (gameState !== 'PLAYING') return;
 
-function showLoading(isLoading) {
-    if (isLoading) {
-        loadingIndicator.classList.remove('hidden');
-        movieResults.classList.add('hidden');
-    } else {
-        loadingIndicator.classList.add('hidden');
-        movieResults.classList.remove('hidden');
+    if (frames % 100 === 0) {
+        createPipe();
+    }
+
+    for (let i = pipes.length - 1; i >= 0; i--) {
+        const p = pipes[i];
+        p.x -= PIPE_SPEED;
+
+        // Collision detection
+        if (
+            bird.x < p.x + PIPE_WIDTH &&
+            bird.x + bird.width > p.x &&
+            (bird.y < p.topHeight || bird.y + bird.height > p.topHeight + PIPE_GAP)
+        ) {
+            gameOver();
+        }
+
+        // Score update
+        if (!p.passed && bird.x > p.x + PIPE_WIDTH) {
+            p.passed = true;
+            score++;
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        // Remove off-screen pipes
+        if (p.x + PIPE_WIDTH < 0) {
+            pipes.splice(i, 1);
+        }
     }
 }
 
-function showError(message) {
-    errorMessage.textContent = message;
-    errorMessage.classList.remove('hidden');
-    movieResults.innerHTML = ''; // Clear results if error occurs
-}
-
-function hideError() {
-    errorMessage.classList.add('hidden');
-}
-
-function clearResults() {
-    movieResults.innerHTML = '';
-}
-
-// --- Watchlist Persistence Logic (localStorage) ---
-
-/**
- * Get watchlist from localStorage
- */
-function getWatchlist() {
-    const watchlist = localStorage.getItem('cineSearch_watchlist');
-    return watchlist ? JSON.parse(watchlist) : [];
-}
-
-/**
- * Save watchlist to localStorage
- */
-function saveWatchlist(watchlist) {
-    localStorage.setItem('cineSearch_watchlist', JSON.stringify(watchlist));
-}
-
-/**
- * Add a movie to the watchlist
- */
-function addToWatchlist(movie) {
-    const watchlist = getWatchlist();
-
-    // Check if movie already exists in watchlist
-    const exists = watchlist.some(item => item.id === movie['#IMDB_ID']);
-
-    if (exists) {
-        alert('This movie is already in your watchlist!');
-        return;
-    }
-
-    const watchlistItem = {
-        id: movie['#IMDB_ID'],
-        title: movie['#TITLE'],
-        year: movie['#YEAR'],
-        poster: movie['#IMG_POSTER'],
-        actors: movie['#ACTORS'],
-        rating: 0,
-        comment: '',
-        dateAdded: new Date().toISOString()
-    };
-
-    watchlist.push(watchlistItem);
-    saveWatchlist(watchlist);
-
-    // Switch to watchlist view to show the addition
-    // switchTab('watchlist'); // Optional, maybe better to just show a "success" message
-}
-
-/**
- * Update a movie's details in the watchlist
- */
-function updateWatchlistItem(id, rating, comment) {
-    const watchlist = getWatchlist();
-    const index = watchlist.findIndex(item => item.id === id);
-
-    if (index !== -1) {
-        watchlist[index].rating = rating;
-        watchlist[index].comment = comment;
-        saveWatchlist(watchlist);
-    }
-}
-
-/**
- * Remove a movie from the watchlist
- */
-function removeFromWatchlist(id) {
-    let watchlist = getWatchlist();
-    watchlist = watchlist.filter(item => item.id !== id);
-    saveWatchlist(watchlist);
-    renderWatchlist(); // Re-render to show changes
-}
-
-/**
- * Render the watchlist in the DOM
- */
-function renderWatchlist() {
-    const watchlist = getWatchlist();
-    watchlistResults.innerHTML = '';
-
-    if (watchlist.length === 0) {
-        watchlistEmpty.classList.remove('hidden');
-        return;
-    }
-
-    watchlistEmpty.classList.add('hidden');
-
-    watchlist.forEach(item => {
-        const movieCard = document.createElement('div');
-        movieCard.classList.add('movie-card');
-
-        movieCard.innerHTML = `
-            <img src="${escapeHTML(item.poster)}" alt="${escapeHTML(item.title)}" class="movie-poster" onerror="this.src='https://via.placeholder.com/350x500?text=No+Poster'">
-            <div class="movie-info">
-                <div>
-                    <h3 class="movie-title">${escapeHTML(item.title)}</h3>
-                    <span class="movie-year">${escapeHTML(item.year)}</span>
-                </div>
-
-                <div class="watchlist-controls">
-                    <label>Rating (1-10):</label>
-                    <input type="number" class="rating-input" min="0" max="10" value="${escapeHTML(String(item.rating))}" data-id="${escapeHTML(item.id)}">
-
-                    <label>Your Comment:</label>
-                    <textarea class="comment-input" placeholder="Add a note..." data-id="${escapeHTML(item.id)}">${escapeHTML(item.comment)}</textarea>
-
-                    <div class="watchlist-actions">
-                        <span class="save-status hidden" id="status-${escapeHTML(item.id)}">Saved!</span>
-                        <button class="remove-btn" data-id="${escapeHTML(item.id)}">Remove</button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Event listeners for rating and comment updates
-        const ratingInput = movieCard.querySelector('.rating-input');
-        const commentInput = movieCard.querySelector('.comment-input');
-        const removeBtn = movieCard.querySelector('.remove-btn');
-        const statusMsg = movieCard.querySelector('.save-status');
-
-        const handleUpdate = () => {
-            updateWatchlistItem(item.id, ratingInput.value, commentInput.value);
-            // Show temporary save feedback
-            statusMsg.classList.remove('hidden');
-            setTimeout(() => statusMsg.classList.add('hidden'), 2000);
-        };
-
-        ratingInput.addEventListener('change', handleUpdate);
-        commentInput.addEventListener('input', debounce(handleUpdate, 1000));
-
-        removeBtn.addEventListener('click', () => {
-            if (confirm(`Are you sure you want to remove ${item.title} from your watchlist?`)) {
-                removeFromWatchlist(item.id);
-            }
-        });
-
-        watchlistResults.appendChild(movieCard);
+function drawPipes() {
+    ctx.fillStyle = '#2e8b57';
+    pipes.forEach(p => {
+        // Top pipe
+        ctx.fillRect(p.x, 0, PIPE_WIDTH, p.topHeight);
+        // Bottom pipe
+        ctx.fillRect(p.x, p.topHeight + PIPE_GAP, PIPE_WIDTH, CANVAS_HEIGHT - (p.topHeight + PIPE_GAP));
     });
 }
 
-/**
- * Switch between Search and Watchlist tabs
- */
-function switchTab(tab) {
-    if (tab === 'search') {
-        tabSearch.classList.add('active');
-        tabWatchlist.classList.remove('active');
-        searchSection.classList.remove('hidden');
-        watchlistSection.classList.add('hidden');
-    } else {
-        tabSearch.classList.remove('active');
-        tabWatchlist.classList.add('active');
-        searchSection.classList.add('hidden');
-        watchlistSection.classList.remove('hidden');
-        renderWatchlist();
-    }
+function gameLoop() {
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    bird.update();
+    updatePipes();
+
+    drawPipes();
+    bird.draw();
+
+    frames++;
+    requestAnimationFrame(gameLoop);
 }
 
-/**
- * Debounce helper for textarea input
- */
-function debounce(func, delay) {
-    let timeout;
-    return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
-    };
+function startGame() {
+    gameState = 'PLAYING';
+    score = 0;
+    frames = 0;
+    pipes = [];
+    bird.reset();
+    scoreDisplay.textContent = `Score: ${score}`;
+    message.textContent = '';
+    subMessage.textContent = '';
 }
 
-// --- Event Listeners ---
+function gameOver() {
+    gameState = 'GAME_OVER';
+    message.textContent = 'Game Over';
+    subMessage.textContent = 'Press Space to Restart';
+}
 
-// Tab switching
-tabSearch.addEventListener('click', () => switchTab('search'));
-tabWatchlist.addEventListener('click', () => switchTab('watchlist'));
-
-// Handle form submission
-searchForm.addEventListener('submit', (event) => {
-    // Prevent the default form submission (page reload)
-    event.preventDefault();
-
-    const query = searchInput.value.trim();
-
-    if (query) {
-        fetchMovies(query);
-    } else {
-        showError('Please enter a movie title to search.');
+// Input handling
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        if (gameState === 'START' || gameState === 'GAME_OVER') {
+            startGame();
+        } else if (gameState === 'PLAYING') {
+            bird.flap();
+        }
     }
 });
 
-// Optional: Auto-focus search input on load
-window.addEventListener('load', () => {
-    searchInput.focus();
+// Also handle click/touch for better experience
+canvas.addEventListener('mousedown', () => {
+    if (gameState === 'START' || gameState === 'GAME_OVER') {
+        startGame();
+    } else if (gameState === 'PLAYING') {
+        bird.flap();
+    }
 });
+
+gameLoop();

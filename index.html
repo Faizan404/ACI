@@ -3,64 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CineSearch | Professional Movie Finder</title>
+    <title>Flappy Bird JS</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts for professional look -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>CineSearch</h1>
-            <p>Discover your next favorite movie</p>
-
-            <nav class="nav-tabs">
-                <button id="tab-search" class="tab-btn active">Search</button>
-                <button id="tab-watchlist" class="tab-btn">My Watchlist</button>
-            </nav>
-
-            <form id="search-form">
-                <input type="text" id="search-input" placeholder="Search for a movie..." autocomplete="off">
-                <button type="submit" id="search-button">Search</button>
-            </form>
-        </header>
-
-        <main>
-            <!-- Search Results Section -->
-            <section id="search-section">
-                <div id="loading" class="hidden">
-                    <div class="spinner"></div>
-                    <p>Searching for movies...</p>
-                </div>
-
-                <div id="error-message" class="hidden"></div>
-
-                <div id="movie-results" class="movie-grid">
-                    <!-- Movie cards will be injected here -->
-                    <div class="empty-state">
-                        <p>Start by searching for a movie title!</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Watchlist Section -->
-            <section id="watchlist-section" class="hidden">
-                <div id="watchlist-results" class="movie-grid">
-                    <!-- Watchlist items will be injected here -->
-                </div>
-                <div id="watchlist-empty" class="empty-state">
-                    <p>Your watchlist is empty. Add some movies from the search results!</p>
-                </div>
-            </section>
-        </main>
-
-        <footer>
-        <p>&copy; 2024 CineSearch. Built for JS Beginners.</p>
-        </footer>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-overlay">
+            <div id="score-display">Score: 0</div>
+            <div id="message-container">
+                <h1 id="message">Press Space to Start</h1>
+                <p id="sub-message"></p>
+            </div>
+        </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
